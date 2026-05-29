@@ -1,0 +1,2498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#8E44AD">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="功过格">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>功过格 - 善恶记录</title>
+    <style>
+        :root {
+            --ren: #E74C3C;    /* 仁 - 红 */
+            --yi: #27AE60;     /* 义 - 绿 */
+            --li: #E67E22;     /* 礼 - 橙 */
+            --zhi: #2980B9;    /* 智 - 蓝 */
+            --xin: #8E44AD;    /* 信 - 紫 */
+            --bg: #F5F5F5;
+            --card-bg: #FFFFFF;
+            --text: #333333;
+            --text-light: #666666;
+            --border: #E0E0E0;
+            --gold: #FFD700;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding-bottom: 70px;
+        }
+        
+        /* 顶部导航 */
+        .header {
+            background: linear-gradient(135deg, var(--xin) 0%, var(--zhi) 100%);
+            color: white;
+            padding: 20px 16px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .header .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        /* 底部导航 */
+        .nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 6px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .nav-item.active {
+            color: var(--xin);
+        }
+        
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 2px;
+        }
+        
+        .nav-item span {
+            display: block;
+            font-size: 11px;
+        }
+        
+        /* 页面容器 */
+        .page {
+            display: none;
+            padding: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 卡片 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .card-title {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            border-radius: 2px;
+        }
+        
+        /* 首页 - 今日分数 */
+        .today-score {
+            padding: 20px 16px;
+        }
+        .score-main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .score-side {
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .score-side-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+        
+        .score-side-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .score-side.gong-side .score-side-value { color: var(--yi); }
+        .score-side.guoh-side .score-side-value { color: var(--ren); }
+        
+        .score-circle {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .score-circle.gong {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+            border: 3px solid var(--yi);
+        }
+        
+        .score-circle.guoh {
+            background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+            border: 3px solid var(--ren);
+        }
+        
+        .score-circle.neutral {
+            background: linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%);
+            border: 3px solid var(--text-light);
+        }
+        
+        .score-value {
+            font-size: 40px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        .score-circle.gong .score-value { color: var(--yi); }
+        .score-circle.guoh .score-value { color: var(--ren); }
+        .score-circle.neutral .score-value { color: var(--text-light); }
+        
+        .score-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        .score-detail {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        
+        .score-detail .gong { color: var(--yi); }
+        .score-detail .guoh { color: var(--ren); }
+        
+        /* 快速记录按钮 */
+        .quick-add {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        
+        .btn:active {
+            transform: scale(0.97);
+        }
+        
+        .btn-gong {
+            background: linear-gradient(135deg, var(--yi) 0%, #219150 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+        
+        .btn-guoh {
+            background: linear-gradient(135deg, var(--ren) 0%, #C0392B 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        
+        /* 打卡信息 */
+        .checkin-info {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        
+        .checkin-item {
+            padding: 12px;
+        }
+        
+        .checkin-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--xin);
+        }
+        
+        .checkin-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        /* 段位进度 */
+        .rank-section {
+            padding: 16px;
+        }
+
+        .rank-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .rank-progress-text {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .rank-percent {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--xin);
+        }
+
+        .progress-wrapper {
+            position: relative;
+            height: 36px;
+            margin: 8px 0;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: #E0E0E0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--xin) 0%, var(--gold) 100%);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .rank-floating-tag {
+            position: absolute;
+            bottom: 14px;
+            transform: translateX(-50%);
+            background: var(--xin);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+            transition: left 0.5s ease;
+            z-index: 2;
+        }
+
+        .rank-floating-tag::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid var(--xin);
+        }
+
+        .rank-list {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 11px;
+            color: var(--text-light);
+        }
+        
+        /* 分类选择 */
+        .category-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .category-item {
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s;
+            border: 2px solid transparent;
+        }
+        
+        .category-item:active {
+            transform: scale(0.97);
+        }
+        
+        .category-item.selected {
+            border-color: currentColor;
+        }
+        
+        .category-item.济人 { background: #FFEBEE; color: var(--ren); }
+        .category-item.利物 { background: #E8F5E9; color: var(--yi); }
+        .category-item.劝化 { background: #FFF3E0; color: var(--li); }
+        .category-item.修身 { background: #E3F2FD; color: var(--zhi); }
+        
+        /* 分类标签栏 */
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            padding: 6px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .category-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 8px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            white-space: nowrap;
+            background: var(--bg);
+            color: var(--text-light);
+        }
+        
+        .category-tab.active {
+            border-color: var(--xin);
+            background: white;
+            color: var(--xin);
+            box-shadow: 0 2px 8px rgba(142, 68, 173, 0.15);
+        }
+        
+        .category-tab.济人.active { color: var(--ren); border-color: var(--ren); }
+        .category-tab.利物.active { color: var(--yi); border-color: var(--yi); }
+        .category-tab.劝化.active { color: var(--li); border-color: var(--li); }
+        .category-tab.修身.active { color: var(--zhi); border-color: var(--zhi); }
+        
+        
+        .category-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+        
+        .category-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .category-desc {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        
+        /* 条目列表 */
+        .items-section {
+            margin-top: 16px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .section-title.gong { color: var(--yi); }
+        .section-title.guoh { color: var(--ren); }
+        
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        /* 善功小过对照表格 */
+        .items-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .item-pair {
+            display: contents;
+        }
+        
+        .pair-label {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 0 4px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .pair-label.gong {
+            color: var(--yi);
+        }
+        
+        .pair-label.guoh {
+            color: var(--ren);
+            text-align: right;
+        }
+        
+        .item-card-compact {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 1px solid var(--border);
+        }
+        
+        .item-card-compact:active {
+            transform: scale(0.98);
+        }
+        
+        .item-card-compact.gong {
+            border-left: 3px solid var(--yi);
+        }
+        
+        .item-card-compact.guoh {
+            border-right: 3px solid var(--ren);
+        }
+        
+        .item-card-compact.gong:hover {
+            box-shadow: 0 2px 8px rgba(39, 174, 96, 0.15);
+        }
+        
+        .item-card-compact.guoh:hover {
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.15);
+        }
+        
+        .item-score-compact {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        
+        .item-card-compact.gong .item-score-compact {
+            background: #E8F5E9;
+            color: var(--yi);
+        }
+        
+        .item-card-compact.guoh .item-score-compact {
+            background: #FFEBEE;
+            color: var(--ren);
+        }
+        
+        .item-name-compact {
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        
+        .item-reason-compact {
+            font-size: 10px;
+            color: var(--text-light);
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+        
+        .item-card {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        
+        .item-card:active {
+            transform: scale(0.98);
+        }
+        
+        .item-card.gong:hover {
+            box-shadow: 0 2px 8px rgba(39, 174, 96, 0.2);
+        }
+        
+        .item-card.guoh:hover {
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+        }
+        
+        .item-score {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .item-card.gong .item-score {
+            background: #E8F5E9;
+            color: var(--yi);
+        }
+        
+        .item-card.guoh .item-score {
+            background: #FFEBEE;
+            color: var(--ren);
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .item-reason {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+        
+        /* 自定义条目 */
+        .custom-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px dashed var(--border);
+        }
+        
+        .add-custom-btn {
+            width: 100%;
+            padding: 14px;
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-light);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .add-custom-btn:active {
+            border-color: var(--xin);
+            color: var(--xin);
+        }
+        
+        .custom-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            background: #F8F8F8;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .custom-item-info {
+            flex: 1;
+        }
+        
+        .custom-item-name {
+            font-size: 14px;
+        }
+        
+        .custom-item-score {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .custom-item-delete {
+            padding: 6px 12px;
+            background: #FFEBEE;
+            color: var(--ren);
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        /* 返回按钮 */
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 0;
+            color: var(--xin);
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        
+        /* 日历 */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .calendar-month {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .calendar-nav button {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #F0F0F0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        
+        .weekday {
+            font-size: 12px;
+            color: var(--text-light);
+            padding: 8px 0;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 14px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .calendar-day.empty {
+            cursor: default;
+        }
+        
+        .calendar-day.today {
+            background: var(--xin);
+            color: white;
+        }
+        
+        .calendar-day.has-record::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--yi);
+            position: absolute;
+            bottom: 4px;
+        }
+        
+        .calendar-day.has-guoh::after {
+            background: var(--ren);
+        }
+        
+        .calendar-day.has-both::after {
+            background: linear-gradient(90deg, var(--yi) 50%, var(--ren) 50%);
+        }
+        
+        /* 月度统计 */
+        /* 今日记录 */
+        .today-records {
+            margin-top: 16px;
+        }
+        
+        .today-records-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        
+        .today-records-toggle {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-light);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+        }
+        
+        .today-records.collapsed .today-records-toggle {
+            transform: rotate(-90deg);
+        }
+        
+        .today-records.collapsed #today-records-list {
+            display: none;
+        }
+        
+        .today-records-summary {
+            display: none;
+            padding: 12px 0;
+        }
+        
+        .today-records.collapsed .today-records-summary {
+            display: block;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 14px;
+            color: var(--text);
+        }
+        
+        .summary-item + .summary-item {
+            border-top: 1px solid var(--border);
+        }
+        
+        .summary-score {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .summary-score.gong { color: var(--yi); }
+        .summary-score.guoh { color: var(--ren); }
+        
+        .records-split {
+            display: flex;
+            gap: 10px;
+        }
+
+        .records-side {
+            flex: 1;
+        }
+
+        .records-side-title {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 0;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 4px;
+        }
+
+        .records-side-title.gong {
+            color: var(--yi);
+            border-bottom-color: var(--yi);
+        }
+
+        .records-side-title.guoh {
+            color: var(--ren);
+            border-bottom-color: var(--ren);
+            text-align: right;
+        }
+
+        .records-side .record-item {
+            border-bottom-color: #F0F0F0;
+        }
+
+        .records-side .record-name {
+            font-size: 13px;
+        }
+
+        .records-side .record-score {
+            font-size: 13px;
+        }
+
+        .record-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .record-item:last-child {
+            border-bottom: none;
+        }
+
+        .record-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .record-icon.gong {
+            background: #E8F5E9;
+            color: var(--yi);
+        }
+
+        .record-icon.guoh {
+            background: #FFEBEE;
+            color: var(--ren);
+        }
+
+        .record-name {
+            flex: 1;
+            font-size: 13px;
+        }
+
+        .record-score {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .record-score.gong { color: var(--yi); }
+        .record-score.guoh { color: var(--ren); }
+        
+        /* 统计页 */
+        .tab-bar {
+            display: flex;
+            background: #F0F0F0;
+            border-radius: 8px;
+            padding: 3px;
+            margin-bottom: 16px;
+        }
+        
+        .tab-item {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-item.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* 善恶对比 */
+        .compare-chart {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+        }
+        
+        .compare-bar {
+            flex: 1;
+            height: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        .bar-gong {
+            height: 100%;
+            background: var(--yi);
+            transition: width 0.5s ease;
+        }
+        
+        .bar-guoh {
+            height: 100%;
+            background: var(--ren);
+            transition: width 0.5s ease;
+        }
+        
+        .compare-value {
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .compare-value.gong { color: var(--yi); }
+        .compare-value.guoh { color: var(--ren); }
+        
+        /* 分类分布 - 竖状柱状图（功过双柱） */
+        .category-chart {
+            padding: 16px 8px 8px;
+        }
+
+        .v-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 180px;
+            padding: 0 4px;
+            border-bottom: 2px solid var(--border);
+            position: relative;
+        }
+
+        .v-cat-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            justify-content: flex-end;
+            padding: 0 4px;
+        }
+
+        .v-cat-bars {
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+            justify-content: center;
+            flex: 1;
+            width: 100%;
+        }
+
+        .v-bar {
+            width: 18px;
+            border-radius: 3px 3px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+            min-height: 2px;
+        }
+
+        .v-bar.gong {
+            background: linear-gradient(180deg, var(--yi), #81C784);
+        }
+
+        .v-bar.guoh {
+            background: linear-gradient(180deg, var(--ren), #E57373);
+        }
+
+        .v-bar-val {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .v-bar-val.gong { color: var(--yi); }
+        .v-bar-val.guoh { color: var(--ren); }
+
+        .v-cat-label {
+            font-size: 12px;
+            color: var(--text);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .v-cat-summary {
+            font-size: 10px;
+            margin-top: 1px;
+            font-weight: 600;
+        }
+
+        .v-cat-summary.positive { color: var(--yi); }
+        .v-cat-summary.negative { color: var(--ren); }
+        .v-cat-summary.zero { color: var(--text-light); }
+        
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+            animation: modalIn 0.3s ease;
+            position: relative;
+        }
+        
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .modal-title.gong { color: var(--yi); }
+        .modal-title.guoh { color: var(--ren); }
+        
+        .modal-message {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+        
+        .modal-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .modal-btn.confirm {
+            background: var(--xin);
+            color: white;
+        }
+        
+        .modal-btn.cancel {
+            background: #F0F0F0;
+            color: var(--text);
+            margin-top: 10px;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            font-size: 20px;
+            color: var(--text-light);
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: #F0F0F0;
+            color: var(--text);
+        }
+        
+        .modal-close:active {
+            background: #E0E0E0;
+        }
+        
+        /* 大善弹窗 */
+        .modal.great .modal-content {
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+        
+        .modal.great .modal-icon {
+            animation: sparkle 1s infinite;
+        }
+        
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* 自定义弹窗 */
+        .custom-modal .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        
+        .custom-modal label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 6px;
+        }
+        
+        .custom-modal input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .custom-modal input:focus {
+            outline: none;
+            border-color: var(--xin);
+        }
+        
+        .type-select {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .type-option {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .type-option.selected {
+            border-color: currentColor;
+        }
+        
+        .type-option.gong {
+            color: var(--yi);
+        }
+        
+        .type-option.guoh {
+            color: var(--ren);
+        }
+        
+        .score-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .score-option {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .score-option.selected {
+            border-color: var(--xin);
+            background: var(--xin);
+            color: white;
+        }
+
+        /* 隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+
+        /* 删除按钮 */
+        .record-item { position: relative; }
+        .record-delete {
+            position: absolute;
+            right: -4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--ren);
+            font-size: 14px;
+            line-height: 22px;
+            text-align: center;
+            cursor: pointer;
+            display: block;
+            padding: 0;
+            opacity: 0.5;
+        }
+        .record-delete:active {
+            opacity: 1;
+            background: rgba(231, 76, 60, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部 -->
+    <div class="header">
+        <h1 id="app-title">功过格</h1>
+        <div class="subtitle">记录善行 · 改变命运</div>
+    </div>
+
+    <!-- 首页 -->
+    <div id="page-home" class="page active">
+        <!-- 今日分数 -->
+        <div class="card">
+            <div class="today-score">
+                <div class="score-main">
+                    <div class="score-side gong-side">
+                        <div class="score-side-label">善</div>
+                        <div class="score-side-value" id="today-gong">0</div>
+                    </div>
+                    <div id="score-circle" class="score-circle neutral">
+                        <div id="score-value" class="score-value">0</div>
+                        <div class="score-label">今日净分</div>
+                    </div>
+                    <div class="score-side guoh-side">
+                        <div class="score-side-label">恶</div>
+                        <div class="score-side-value" id="today-guoh">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速记录 -->
+        <div class="card">
+            <div class="card-title">快速记录</div>
+            <div class="quick-add">
+                <button class="btn btn-gong" onclick="showCategory('gong')">
+                    <span>记善功</span>
+                    <span>+</span>
+                </button>
+                <button class="btn btn-guoh" onclick="showCategory('guoh')">
+                    <span>记小过</span>
+                    <span>+</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 打卡信息 -->
+        <div class="card">
+            <div class="checkin-info">
+                <div class="checkin-item">
+                    <div id="total-gong" class="checkin-value" style="color: var(--yi)">0</div>
+                    <div class="checkin-label">累计善功</div>
+                </div>
+                <div class="checkin-item">
+                    <div id="streak-days" class="checkin-value">0</div>
+                    <div class="checkin-label">连续打卡</div>
+                </div>
+                <div class="checkin-item">
+                    <div id="total-guoh" class="checkin-value" style="color: var(--ren)">0</div>
+                    <div class="checkin-label">累计小过</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 段位进度 -->
+        <div class="card">
+            <div class="rank-section">
+                <div class="rank-top-row">
+                    <span id="rank-progress-text" class="rank-progress-text">0 / 1000</span>
+                    <span id="rank-percent" class="rank-percent">0%</span>
+                </div>
+                <div class="progress-wrapper">
+                    <div class="rank-floating-tag" id="rank-floating-tag" style="left: 0%">凡人</div>
+                    <div class="progress-bar">
+                        <div id="rank-progress" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="rank-list">
+                    <span>凡人 0</span>
+                    <span>君子 1000</span>
+                    <span>贤人 3000</span>
+                    <span>善人 6000</span>
+                    <span>圣贤 10000</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 记录页 -->
+    <div id="page-record" class="page">
+        <!-- 分类标签栏 -->
+        <div class="category-tabs">
+            <div class="category-tab 济人 active" onclick="showItems('济人')">济人</div>
+            <div class="category-tab 利物" onclick="showItems('利物')">利物</div>
+            <div class="category-tab 劝化" onclick="showItems('劝化')">劝化</div>
+            <div class="category-tab 修身" onclick="showItems('修身')">修身</div>
+        </div>
+        
+        <!-- 善功小过对照表格 -->
+        <div class="items-section">
+            <div class="items-grid" id="items-grid"></div>
+        </div>
+        
+        <!-- 自定义入口 -->
+        <div class="custom-section">
+            <div class="card-title">自定义条目</div>
+            <div id="custom-list"></div>
+            <button id="add-custom-btn" class="add-custom-btn" onclick="showCustomModal()">
+                <span>+</span>
+                <span>添加自定义条目</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 日历页 -->
+    <div id="page-calendar" class="page">
+        <div class="card">
+            <div class="calendar-header">
+                <div id="calendar-month" class="calendar-month">2024年1月</div>
+                <div class="calendar-nav">
+                    <button onclick="changeMonth(-1)">‹</button>
+                    <button onclick="changeMonth(1)">›</button>
+                </div>
+            </div>
+            
+            <div class="weekdays">
+                <div class="weekday">日</div>
+                <div class="weekday">一</div>
+                <div class="weekday">二</div>
+                <div class="weekday">三</div>
+                <div class="weekday">四</div>
+                <div class="weekday">五</div>
+                <div class="weekday">六</div>
+            </div>
+            
+            <div id="calendar-grid" class="calendar-grid"></div>
+        </div>
+        
+        <div class="card today-records">
+            <div class="today-records-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <div class="card-title" id="cal-records-title">今日记录</div>
+                <button class="today-records-toggle">▼</button>
+            </div>
+            <div id="today-records-list"></div>
+            <div id="today-records-summary" class="today-records-summary"></div>
+        </div>
+    </div>
+
+    <!-- 统计页 -->
+    <div id="page-stats" class="page">
+        <div class="tab-bar">
+            <div class="tab-item active" onclick="switchTab('week')">本周</div>
+            <div class="tab-item" onclick="switchTab('month')">本月</div>
+            <div class="tab-item" onclick="switchTab('total')">累计</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">善恶对比</div>
+            <div class="compare-chart">
+                <div class="compare-value gong" id="stats-gong">0</div>
+                <div class="compare-bar">
+                    <div id="bar-gong" class="bar-gong" style="width: 50%"></div>
+                    <div id="bar-guoh" class="bar-guoh" style="width: 50%"></div>
+                </div>
+                <div class="compare-value guoh" id="stats-guoh">0</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">分类分布</div>
+            <div class="category-chart">
+                <div id="category-chart-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="nav">
+        <div class="nav-item active" onclick="switchPage('home')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>首页</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('record')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span>记录</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('calendar')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+            <span>日历</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('stats')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+            <span>统计</span>
+        </div>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cancelRecord()">×</button>
+            <div id="modal-icon" style="font-size: 36px; min-height: 44px; line-height: 44px;"></div>
+            <div id="modal-title" class="modal-title gong" style="font-size: 22px; font-weight: bold; margin: 8px 0 4px;"></div>
+            <div id="modal-message" class="modal-message" style="font-size: 15px; color: var(--text-light); margin-bottom: 16px;"></div>
+            <button class="modal-btn confirm" onclick="confirmRecord()">确认记录</button>
+            <button class="modal-btn cancel" onclick="cancelRecord()">取消</button>
+        </div>
+    </div>
+
+    <!-- 自定义条目弹窗 -->
+    <div id="custom-modal" class="modal custom-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeCustomModal()">×</button>
+            <div class="modal-title" style="margin-bottom: 16px;">添加自定义条目</div>
+            
+            <div class="form-group">
+                <label>条目名称</label>
+                <input type="text" id="custom-name" placeholder="例如：主动让座">
+            </div>
+            
+            <div class="form-group">
+                <label>类型</label>
+                <div class="type-select">
+                    <div class="type-option gong" onclick="selectCustomType('gong')">善功</div>
+                    <div class="type-option guoh" onclick="selectCustomType('guoh')">小过</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>分数</label>
+                <div class="score-select">
+                    <div class="score-option" onclick="selectCustomScore(1)">1</div>
+                    <div class="score-option" onclick="selectCustomScore(2)">2</div>
+                    <div class="score-option" onclick="selectCustomScore(3)">3</div>
+                    <div class="score-option" onclick="selectCustomScore(4)">4</div>
+                    <div class="score-option" onclick="selectCustomScore(5)">5</div>
+                    <div class="score-option" onclick="selectCustomScore(6)">6</div>
+                    <div class="score-option" onclick="selectCustomScore(7)">7</div>
+                    <div class="score-option" onclick="selectCustomScore(8)">8</div>
+                    <div class="score-option" onclick="selectCustomScore(9)">9</div>
+                    <div class="score-option" onclick="selectCustomScore(10)">10</div>
+                </div>
+            </div>
+            
+            <button class="modal-btn confirm" onclick="saveCustomItem()">保存</button>
+            <button class="modal-btn cancel" onclick="closeCustomModal()">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // 数据存储键名
+        const STORAGE_KEY = 'gongguo_state_v4';
+        
+        // 预设条目数据
+        const PRESET_ITEMS = {
+            济人: {
+                gong: [
+                    { name: '救人性命', score: 10, reason: '舍己救人，生命无价' },
+                    { name: '帮人脱离险境', score: 8, reason: '危难相助，义薄云天' },
+                    { name: '出手相助', score: 6, reason: '挺身而出，助人为乐' },
+                    { name: '关怀弱势', score: 4, reason: '心系他人，温暖有情' },
+                    { name: '微笑待人', score: 2, reason: '一个微笑，暖人心田' },
+                    { name: '起心动念怜悯', score: 1, reason: '善念一动，福报自来' }
+                ],
+                guoh: [
+                    { name: '害人利己', score: 10, reason: '损人利己，天理不容' },
+                    { name: '见死不救', score: 8, reason: '冷漠无情，良心缺失' },
+                    { name: '幸灾乐祸', score: 6, reason: '落井下石，人品堪忧' },
+                    { name: '冷漠无视', score: 4, reason: '事不关己，高高挂起' },
+                    { name: '嫌贫爱富', score: 2, reason: '攀附富贵，轻慢贫贱' },
+                    { name: '起心动念恶意', score: 1, reason: '恶念初生，当速戒之' }
+                ]
+            },
+            利物: {
+                gong: [
+                    { name: '捐献救人', score: 9, reason: '慷慨解囊，救急救命' },
+                    { name: '慷慨解囊', score: 7, reason: '无私奉献，功德无量' },
+                    { name: '捐献助人', score: 5, reason: '爱心捐赠，积德行善' },
+                    { name: '分享资源', score: 3, reason: '资源共享，互惠互利' },
+                    { name: '请客施惠', score: 2, reason: '礼尚往来，人情温暖' },
+                    { name: '起心动念布施', score: 1, reason: '施舍之心，善莫大焉' }
+                ],
+                guoh: [
+                    { name: '偷盗背信', score: 9, reason: '侵占他人，因小失大' },
+                    { name: '诈骗钱财', score: 7, reason: '欺诈取财，信用全无' },
+                    { name: '吝啬不舍', score: 5, reason: '一毛不拔，自私自利' },
+                    { name: '贪图小利', score: 3, reason: '贪小便宜，吃大亏' },
+                    { name: '浪费食物', score: 2, reason: '糟蹋五谷，折损福报' },
+                    { name: '起心动念贪念', score: 1, reason: '贪念初起，当速断之' }
+                ]
+            },
+            劝化: {
+                gong: [
+                    { name: '劝人向善', score: 9, reason: '劝恶从善，功德无量' },
+                    { name: '化解深仇', score: 7, reason: '化干戈为玉帛' },
+                    { name: '传播善法', score: 5, reason: '善法流通，惠及众生' },
+                    { name: '劝人和解', score: 3, reason: '平息争端，促进和谐' },
+                    { name: '赞美他人', score: 2, reason: '真诚赞美的力量' },
+                    { name: '起心动念赞美', score: 1, reason: '心存善念，口出善言' }
+                ],
+                guoh: [
+                    { name: '毁损善法', score: 9, reason: '破坏正法，罪业深重' },
+                    { name: '挑拨离间', score: 7, reason: '搬弄是非，众叛亲离' },
+                    { name: '传播恶语', score: 5, reason: '造谣生事，害人害己' },
+                    { name: '诽谤他人', score: 3, reason: '无中生有，毁人名誉' },
+                    { name: '恶语相向', score: 2, reason: '出口伤人，自降身份' },
+                    { name: '起心动念嫉妒', score: 1, reason: '嫉妒之心，当速化之' }
+                ]
+            },
+            修身: {
+                gong: [
+                    { name: '舍己为人', score: 10, reason: '大公无私，楷模典范' },
+                    { name: '克服恶习', score: 8, reason: '自律自强，脱胎换骨' },
+                    { name: '坚持修行', score: 6, reason: '持之以恒，精进不懈' },
+                    { name: '节俭惜福', score: 4, reason: '俭以养德，福报绵长' },
+                    { name: '早起早睡', score: 2, reason: '作息规律，养生之道' },
+                    { name: '起心动念改过', score: 1, reason: '知过能改，善莫大焉' }
+                ],
+                guoh: [
+                    { name: '放逸失度', score: 10, reason: '纵欲无度，自毁前程' },
+                    { name: '沉迷恶习', score: 8, reason: '沉溺不良，害人害己' },
+                    { name: '奢侈浪费', score: 6, reason: '挥霍无度，福报尽失' },
+                    { name: '懈怠懒惰', score: 4, reason: '好逸恶劳，一事无成' },
+                    { name: '拖延症', score: 2, reason: '明日复明日，万事成蹉跎' },
+                    { name: '起心动念懈怠', score: 1, reason: '懈怠之心，当速振之' }
+                ]
+            }
+        };
+        
+        // 鼓励语
+        const ENCOURAGEMENTS = {
+            gong: {
+                small: ['善念一动，福报自来', '点点善行，汇聚成河', '善在身边，温暖随行'],
+                medium: ['真诚利他，功德无量', '助人为乐，心旷神怡', '善莫大焉，福泽绵长'],
+                large: ['大善之举！令人钦佩', '君子之风，浩然正气', '厚德载物，善行天下'],
+                great: ['圣贤之德！泽被苍生', '功德圆满，福荫子孙', '至善至美，天地同辉']
+            },
+            guoh: {
+                gentle: ['知过能改，善莫大焉', '觉察即成长', '放下屠刀，立地成佛'],
+                small: ['小过知省，警醒自身', '觉察是改变的开始'],
+                medium: ['勇于认错，改过自新', '浪子回头金不换'],
+                large: ['痛改前非，重新做人', '放下执念，重获新生']
+            }
+        };
+        
+        // 段位数据
+        const RANKS = [
+            { name: '凡人', threshold: 0, icon: '🌱', color: '#8E44AD' },
+            { name: '君子', threshold: 1000, icon: '🌿', color: '#2980B9' },
+            { name: '贤人', threshold: 3000, icon: '🌳', color: '#27AE60' },
+            { name: '善人', threshold: 6000, icon: '⭐', color: '#E67E22' },
+            { name: '圣贤', threshold: 10000, icon: '👑', color: '#FFD700' }
+        ];
+
+        // 欢迎页鼓励语
+
+        // 全局状态
+        let state = {
+            records: {},      // { '2024-01-15': [{ name, score, type, category, time }] }
+            customItems: [], // [{ name, score, type }]
+            streak: 0,
+            lastCheckIn: null
+        };
+        
+        let currentCategory = '济人';
+        let currentMonth = new Date();
+        let currentTab = 'week';
+        let customType = 'gong';
+        let customScore = 5;
+        let pendingRecord = null;
+        let modalMode = 'encouragement';
+        
+        // 工具函数
+        function getToday() {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        function formatDate(date) {
+            const d = new Date(date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+        
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+        
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+        }
+        
+        // 更新UI
+        function updateUI() {
+            const today = getToday();
+            const todayRecords = state.records[today] || [];
+            
+            // 今日善恶分
+            let todayGong = 0, todayGuoh = 0;
+            todayRecords.forEach(r => {
+                if (r.type === 'gong') todayGong += r.score;
+                else todayGuoh += r.score;
+            });
+            const netScore = todayGong - todayGuoh;
+            
+            document.getElementById('today-gong').textContent = todayGong;
+            document.getElementById('today-guoh').textContent = todayGuoh;
+            document.getElementById('score-value').textContent = netScore;
+            
+            const scoreCircle = document.getElementById('score-circle');
+            scoreCircle.className = 'score-circle ' + (netScore > 0 ? 'gong' : netScore < 0 ? 'guoh' : 'neutral');
+            
+            // 累计统计
+            let totalGong = 0, totalGuoh = 0;
+            Object.values(state.records).forEach(records => {
+                records.forEach(r => {
+                    if (r.type === 'gong') totalGong += r.score;
+                    else totalGuoh += r.score;
+                });
+            });
+            
+            document.getElementById('total-gong').textContent = totalGong;
+            document.getElementById('total-guoh').textContent = totalGuoh;
+            
+            // 连续打卡
+            updateStreak();
+            document.getElementById('streak-days').textContent = state.streak;
+            
+            // 段位进度
+            const totalScore = totalGong;
+            let currentRank = RANKS[0];
+            let nextRank = RANKS[1];
+            
+            for (let i = RANKS.length - 1; i >= 0; i--) {
+                if (totalScore >= RANKS[i].threshold) {
+                    currentRank = RANKS[i];
+                    nextRank = RANKS[i + 1] || null;
+                    break;
+                }
+            }
+            
+            if (nextRank) {
+                var progress = ((totalScore - currentRank.threshold) / (nextRank.threshold - currentRank.threshold)) * 100;
+                var clampedProgress = Math.min(progress, 100);
+                document.getElementById('rank-progress').style.width = clampedProgress + '%';
+                document.getElementById('rank-progress-text').textContent = totalScore + ' / ' + nextRank.threshold;
+                document.getElementById('rank-percent').textContent = Math.floor(clampedProgress) + '%';
+                document.getElementById('rank-floating-tag').textContent = currentRank.name;
+                document.getElementById('rank-floating-tag').style.left = '0%';
+            } else {
+                document.getElementById('rank-progress').style.width = '100%';
+                document.getElementById('rank-progress-text').textContent = '已达巅峰';
+                document.getElementById('rank-percent').textContent = '100%';
+                document.getElementById('rank-floating-tag').textContent = currentRank.name;
+                document.getElementById('rank-floating-tag').style.left = '0%';
+            }
+            
+            // 今日记录列表
+            updateTodayRecords();
+            
+            // 自定义列表
+            updateCustomList();
+
+            // 动态标题：段位 + 功过格
+            const { rank } = getCurrentRank();
+            document.getElementById('app-title').textContent = rank.name + '功过格';
+        }
+        
+        function updateStreak() {
+            const dates = Object.keys(state.records).sort().reverse();
+            
+            if (dates.length === 0) {
+                state.streak = 0;
+                return;
+            }
+            
+            // 用纯日期运算，避免时区/夏令时问题
+            function addDays(dateStr, delta) {
+                var parts = dateStr.split('-');
+                var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                d.setDate(d.getDate() + delta);
+                return formatDate(d);
+            }
+            
+            const todayStr = getToday();
+            const yesterdayStr = addDays(todayStr, -1);
+            
+            // 最近一条记录必须是今天或昨天，否则连续中断
+            if (dates[0] !== todayStr && dates[0] !== yesterdayStr) {
+                state.streak = 0;
+                return;
+            }
+            
+            let streak = 0;
+            let expected = dates[0]; // 从最近有记录的日期开始往前数
+            for (let i = 0; i < dates.length; i++) {
+                if (dates[i] === expected) {
+                    streak++;
+                    expected = addDays(expected, -1);
+                } else {
+                    break;
+                }
+            }
+            
+            state.streak = streak;
+        }
+        
+        function updateTodayRecords() {
+            const today = getToday();
+            const allRecords = state.records[today] || [];
+            const container = document.getElementById('today-records-list');
+            const summaryContainer = document.getElementById('today-records-summary');
+
+            if (allRecords.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 20px;">今日暂无记录</div>';
+                summaryContainer.innerHTML = '';
+                return;
+            }
+
+            // 左加右减：直接遍历原始记录，按类型分栏渲染
+            let totalG = 0, totalGuoh = 0;
+            const gongItems = [], guohItems = [];
+            allRecords.forEach((r, realIdx) => {
+                const itemHtml = '<div class="record-item">' +
+                        '<div class="record-icon ' + r.type + '">' + (r.type === 'gong' ? '+' : '-') + '</div>' +
+                        '<div class="record-name">' + r.name + '</div>' +
+                        '<div class="record-score ' + r.type + '">' + (r.type === 'gong' ? '+' : '-') + r.score + '</div>' +
+                        '<button class="record-delete" onclick="event.stopPropagation();deleteRecord(getToday(),' + realIdx + ')" title="删除">×</button>' +
+                    '</div>';
+                if (r.type === 'gong') { gongItems.push(itemHtml); totalG += r.score; }
+                else { guohItems.push(itemHtml); totalGuoh += r.score; }
+            });
+
+            const gongHtml = gongItems.length ? gongItems.join('') : '<div style="color:var(--text-light);font-size:12px;padding:12px 0;">暂无</div>';
+            const guohHtml = guohItems.length ? guohItems.join('') : '<div style="color:var(--text-light);font-size:12px;padding:12px 0;">暂无</div>';
+
+            container.innerHTML = '<div class="records-split">' +
+                '<div class="records-side">' +
+                    '<div class="records-side-title gong">善功 (+' + totalG + ')</div>' +
+                    gongHtml +
+                '</div>' +
+                '<div class="records-side">' +
+                    '<div class="records-side-title guoh">小过 (-' + totalGuoh + ')</div>' +
+                    guohHtml +
+                '</div>' +
+            '</div>';
+
+            // 折叠时显示分类汇总
+            const cats = ['济人','利物','劝化','修身'];
+            let summaryHtml = '<div style="display:flex;justify-content:space-around;padding:8px 0;font-size:12px;">';
+            cats.forEach(cat => {
+                let cG = 0, cGh = 0;
+                allRecords.forEach(r => {
+                    if (r.category === cat) { if (r.type === 'gong') cG += r.score; else cGh += r.score; }
+                });
+                const net = cG - cGh;
+                if (net !== 0) summaryHtml += '<span style="color:' + (net>=0?'var(--yi)':'var(--ren)') + '">' + cat + ' ' + (net>=0?'+':'') + net + '</span>';
+            });
+            summaryHtml += '</div>';
+            summaryContainer.innerHTML = summaryHtml;
+        }
+
+        function updateCustomList() {
+            const container = document.getElementById('custom-list');
+            
+            if (state.customItems.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = state.customItems.map((item, index) => `
+                <div class="custom-item">
+                    <div class="custom-item-info">
+                        <div class="custom-item-name">${item.name}</div>
+                        <div class="custom-item-score">${item.type === 'gong' ? '善功' : '小过'} · ${item.type === 'gong' ? '+' : '-'}${item.score}分</div>
+                    </div>
+                    <button class="custom-item-delete" onclick="deleteCustomItem(${index})">删除</button>
+                </div>
+            `).join('');
+        }
+        
+        // 页面切换
+        function switchPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('page-' + page).classList.add('active');
+            
+            // 激活对应导航项
+            const navItems = document.querySelectorAll('.nav-item');
+            const pageIndex = ['home', 'record', 'calendar', 'stats'].indexOf(page);
+            if (pageIndex >= 0 && pageIndex < navItems.length) {
+                navItems[pageIndex].classList.add('active');
+            }
+            
+            if (page === 'calendar') {
+                renderCalendar();
+            } else if (page === 'stats') {
+                updateStats();
+            } else if (page === 'record') {
+                showItems(currentCategory || '济人');
+            }
+        }
+        
+        // 分类和条目
+        function showCategory(type) {
+            switchPage('record');
+            showItems('济人');
+        }
+        
+        function showItems(category) {
+            currentCategory = category;
+            
+            // 更新标签高亮
+            document.querySelectorAll('.category-tab').forEach(t => {
+                t.classList.toggle('active', t.classList.contains(category));
+            });
+            
+            const gridContainer = document.getElementById('items-grid');
+            const presets = PRESET_ITEMS[category];
+            
+            // 构建对照表格
+            let html = '';
+            
+            // 表头
+            html += `<div class="pair-label gong">善功 (+)</div>`;
+            html += `<div class="pair-label guoh">小过 (-)</div>`;
+            
+            // 6行对照
+            for (let i = 0; i < 6; i++) {
+                const gongItem = presets.gong[i];
+                const guohItem = presets.guoh[i];
+                
+                // 善功卡片
+                html += `
+                    <div class="item-card-compact gong" onclick="addRecord('${gongItem.name}', ${gongItem.score}, 'gong', '${category}')">
+                        <div class="item-score-compact">+${gongItem.score}</div>
+                        <div>
+                            <div class="item-name-compact">${gongItem.name}</div>
+                            <div class="item-reason-compact">${gongItem.reason}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // 小过卡片
+                html += `
+                    <div class="item-card-compact guoh" onclick="addRecord('${guohItem.name}', ${guohItem.score}, 'guoh', '${category}')">
+                        <div class="item-score-compact">-${guohItem.score}</div>
+                        <div>
+                            <div class="item-name-compact">${guohItem.name}</div>
+                            <div class="item-reason-compact">${guohItem.reason}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 自定义条目（同类）
+            const customInCategory = state.customItems.map((item, index) => ({
+                ...item,
+                customIndex: index
+            }));
+            
+            const customGong = customInCategory.filter(i => i.type === 'gong');
+            const customGuoh = customInCategory.filter(i => i.type === 'guoh');
+            
+            if (customGong.length > 0 || customGuoh.length > 0) {
+                html += `<div class="pair-label gong" style="margin-top: 12px;">自定义善功</div>`;
+                html += `<div class="pair-label guoh" style="margin-top: 12px;">自定义小过</div>`;
+                
+                const maxCustom = Math.max(customGong.length, customGuoh.length);
+                for (let i = 0; i < maxCustom; i++) {
+                    if (i < customGong.length) {
+                        const item = customGong[i];
+                        html += `
+                            <div class="item-card-compact gong" onclick="addCustomRecord(${item.customIndex})">
+                                <div class="item-score-compact">+${item.score}</div>
+                                <div>
+                                    <div class="item-name-compact">${item.name}</div>
+                                    <div class="item-reason-compact">自定义</div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html += `<div></div>`;
+                    }
+                    
+                    if (i < customGuoh.length) {
+                        const item = customGuoh[i];
+                        html += `
+                            <div class="item-card-compact guoh" onclick="addCustomRecord(${item.customIndex})">
+                                <div class="item-score-compact">-${item.score}</div>
+                                <div>
+                                    <div class="item-name-compact">${item.name}</div>
+                                    <div class="item-reason-compact">自定义</div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html += `<div></div>`;
+                    }
+                }
+            }
+            
+            gridContainer.innerHTML = html;
+        }
+        
+        function showCategoryView() {
+            // 已废弃，保留兼容
+            showItems(currentCategory || '济人');
+        }
+        
+        // 添加记录（显示确认框）
+        function addRecord(name, score, type, category) {
+            pendingRecord = { name: name, score: score, type: type, category: category };
+            showConfirmModal();
+        }
+
+        // 显示确认弹窗
+        function showConfirmModal() {
+            if (pendingRecord === null) return;
+            
+            var scoreText = '';
+            if (pendingRecord.type === 'gong') {
+                scoreText = '善功 +' + pendingRecord.score + '分';
+            } else {
+                scoreText = '小过 -' + pendingRecord.score + '分';
+            }
+
+            // 重置弹窗状态（清除上次鼓励模式的残留）
+            var modal = document.getElementById('confirm-modal');
+            modal.classList.remove('great');
+            var icon = document.getElementById('modal-icon');
+            icon.textContent = '';
+            var cancelBtn = modal.querySelector('.modal-btn.cancel');
+            var confirmBtn = modal.querySelector('.modal-btn.confirm');
+            cancelBtn.style.display = '';
+            confirmBtn.textContent = '确认记录';
+            confirmBtn.onclick = confirmRecord;
+            modal.querySelector('.modal-close').onclick = cancelRecord;
+
+            document.getElementById('modal-title').className = 'modal-title ' + pendingRecord.type;
+            document.getElementById('modal-title').textContent = scoreText;
+            document.getElementById('modal-message').textContent = pendingRecord.name;
+            
+            modal.classList.add('active');
+        }
+
+        // 确认记录
+        function confirmRecord() {
+            if (pendingRecord === null) return;
+            
+            var name = pendingRecord.name;
+            var score = pendingRecord.score;
+            var type = pendingRecord.type;
+            var category = pendingRecord.category;
+            
+            var today = getToday();
+            if (!state.records[today]) {
+                state.records[today] = [];
+            }
+            state.records[today].push({
+                name: name,
+                score: score,
+                type: type,
+                category: category,
+                time: new Date().toISOString()
+            });
+            
+            saveState();
+            updateUI();
+            pendingRecord = null;
+            document.getElementById('confirm-modal').classList.remove('active');
+            showEncouragement(type, score);
+        }
+
+        // 取消记录
+        function cancelRecord() {
+            pendingRecord = null;
+            document.getElementById('confirm-modal').classList.remove('active');
+        }
+        
+        function addCustomRecord(index) {
+            const item = state.customItems[index];
+            addRecord(item.name, item.score, item.type, '自定义');
+        }
+        
+        function showEncouragement(type, score) {
+            modalMode = 'encouragement';
+            const modal = document.getElementById('confirm-modal');
+            const icon = document.getElementById('modal-icon');
+            const title = document.getElementById('modal-title');
+            const message = document.getElementById('modal-message');
+            const confirmBtn = modal.querySelector('.modal-btn.confirm');
+            const cancelBtn = modal.querySelector('.modal-btn.cancel');
+            const closeBtn = modal.querySelector('.modal-close');
+
+            cancelBtn.style.display = 'none';
+            confirmBtn.onclick = closeModal;
+            closeBtn.onclick = closeModal;
+
+            let encouragements;
+            
+            if (type === 'gong') {
+                modal.classList.remove('great');
+                
+                if (score >= 10) {
+                    encouragements = getRandomItem(ENCOURAGEMENTS.gong.great);
+                    icon.textContent = '🌟';
+                    modal.classList.add('great');
+                    title.className = 'modal-title gong';
+                    title.textContent = `大善之举！+${score}`;
+                } else if (score >= 7) {
+                    encouragements = getRandomItem(ENCOURAGEMENTS.gong.large);
+                    icon.textContent = '✨';
+                    title.className = 'modal-title gong';
+                    title.textContent = `善功 +${score}`;
+                } else if (score >= 4) {
+                    encouragements = getRandomItem(ENCOURAGEMENTS.gong.medium);
+                    icon.textContent = '👍';
+                    title.className = 'modal-title gong';
+                    title.textContent = `善功 +${score}`;
+                } else {
+                    encouragements = getRandomItem(ENCOURAGEMENTS.gong.small);
+                    icon.textContent = '💫';
+                    title.className = 'modal-title gong';
+                    title.textContent = `善功 +${score}`;
+                }
+            } else {
+                encouragements = getRandomItem(ENCOURAGEMENTS.guoh.gentle);
+                icon.textContent = '🤝';
+                title.className = 'modal-title guoh';
+                title.textContent = `小过 -${score}`;
+            }
+            
+            message.textContent = encouragements;
+            modal.classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('confirm-modal').classList.remove('active');
+        }
+        
+        // 自定义条目
+        function showCustomModal() {
+            if (state.customItems.length >= 10) {
+                alert('最多只能添加10条自定义条目');
+                return;
+            }
+            
+            document.getElementById('custom-name').value = '';
+            customType = 'gong';
+            customScore = 5;
+            
+            document.querySelectorAll('.type-option').forEach(t => t.classList.remove('selected'));
+            document.querySelector('.type-option.gong').classList.add('selected');
+            
+            document.querySelectorAll('.score-option').forEach(s => s.classList.remove('selected'));
+            document.querySelector('.score-option:nth-child(5)').classList.add('selected');
+            
+            document.getElementById('custom-modal').classList.add('active');
+        }
+        
+        function selectCustomType(type) {
+            customType = type;
+            document.querySelectorAll('.type-option').forEach(t => {
+                t.classList.toggle('selected', t.classList.contains(type));
+            });
+        }
+        
+        function selectCustomScore(score) {
+            customScore = score;
+            document.querySelectorAll('.score-option').forEach((s, i) => {
+                s.classList.toggle('selected', i + 1 === score);
+            });
+        }
+        
+        function saveCustomItem() {
+            const name = document.getElementById('custom-name').value.trim();
+            
+            if (!name) {
+                alert('请输入条目名称');
+                return;
+            }
+            
+            state.customItems.push({
+                name,
+                score: customScore,
+                type: customType
+            });
+            
+            saveState();
+            updateUI();
+            closeCustomModal();
+        }
+        
+        function closeCustomModal() {
+            document.getElementById('custom-modal').classList.remove('active');
+        }
+        
+        function deleteCustomItem(index) {
+            if (confirm('确定删除这条自定义条目吗？')) {
+                state.customItems.splice(index, 1);
+                saveState();
+                updateUI();
+            }
+        }
+        
+        // 日历
+        function renderCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            document.getElementById('calendar-month').textContent = `${year}年${month + 1}月`;
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startWeek = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+            
+            const today = getToday();
+            const todayDate = new Date();
+            
+            let monthGong = 0, monthGuoh = 0, monthStreak = 0;
+            
+            let html = '';
+            
+            // 空白格子
+            for (let i = 0; i < startWeek; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+            
+            // 日期格子
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const records = state.records[dateStr] || [];
+                
+                let hasGong = false, hasGuoh = false;
+                let dayGong = 0, dayGuoh = 0;
+                
+                records.forEach(r => {
+                    if (r.type === 'gong') {
+                        hasGong = true;
+                        dayGong += r.score;
+                    } else {
+                        hasGuoh = true;
+                        dayGuoh += r.score;
+                    }
+                });
+                
+                if (dayGong > 0) monthGong += dayGong;
+                if (dayGuoh > 0) monthGuoh += dayGuoh;
+                if (records.length > 0) monthStreak++;
+                
+                let classes = 'calendar-day';
+                if (dateStr === today) classes += ' today';
+                if (hasGong && hasGuoh) classes += ' has-both';
+                else if (hasGong) classes += ' has-record';
+                else if (hasGuoh) classes += ' has-guoh';
+                
+                html += `<div class="${classes}" onclick="showDayRecords('${dateStr}')">${day}</div>`;
+            }
+            
+            document.getElementById('calendar-grid').innerHTML = html;
+        }
+        
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            renderCalendar();
+        }
+        
+        function showDayRecords(dateStr) {
+            // 更新标题
+            var titleEl = document.getElementById('cal-records-title');
+            var today = getToday();
+            titleEl.textContent = dateStr === today ? '今日记录' : dateStr + ' 记录';
+
+            var records = state.records[dateStr] || [];
+            var container = document.getElementById('today-records-list');
+            var summaryContainer = document.getElementById('today-records-summary');
+
+            if (records.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;">该日暂无记录</div>';
+                summaryContainer.innerHTML = '';
+                return;
+            }
+
+            var totalG = 0, totalGuoh = 0;
+            var gongItems = [], guohItems = [];
+            records.forEach(function(r, realIdx) {
+                var itemHtml = '<div class="record-item">' +
+                    '<div class="record-icon ' + r.type + '">' + (r.type === 'gong' ? '+' : '-') + '</div>' +
+                    '<div class="record-name">' + r.name + '</div>' +
+                    '<div class="record-score ' + r.type + '">' + (r.type === 'gong' ? '+' : '-') + r.score + '</div>' +
+                    '<button class="record-delete" onclick="event.stopPropagation();deleteRecordByDate(\'' + dateStr + '\',' + realIdx + ')" title="删除">\u00d7</button>' +
+                    '</div>';
+                if (r.type === 'gong') { gongItems.push(itemHtml); totalG += r.score; }
+                else { guohItems.push(itemHtml); totalGuoh += r.score; }
+            });
+
+            var gongHtml = gongItems.length ? gongItems.join('') : '<div style="color:var(--text-light);font-size:12px;padding:12px 0;">暂无</div>';
+            var guohHtml = guohItems.length ? guohItems.join('') : '<div style="color:var(--text-light);font-size:12px;padding:12px 0;">暂无</div>';
+
+            container.innerHTML = '<div class="records-split">' +
+                '<div class="records-side">' +
+                    '<div class="records-side-title gong">善功 (+' + totalG + ')</div>' +
+                    gongHtml +
+                '</div>' +
+                '<div class="records-side">' +
+                    '<div class="records-side-title guoh">小过 (-' + totalGuoh + ')</div>' +
+                    guohHtml +
+                '</div>' +
+                '</div>';
+            summaryContainer.innerHTML = '';
+
+            // 滚动到记录区
+            container.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 按指定日期删除记录（日历页使用）
+        function deleteRecordByDate(date, idx) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+            var records = state.records[date];
+            if (!records || idx < 0 || idx >= records.length) return;
+            records.splice(idx, 1);
+            if (records.length === 0) { delete state.records[date]; }
+            saveState();
+            updateUI();
+            showDayRecords(date);
+        }
+        
+        // 统计
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-item').forEach(t => {
+                t.classList.toggle('active', t.textContent === (tab === 'week' ? '本周' : tab === 'month' ? '本月' : '累计'));
+            });
+            updateStats();
+        }
+        
+        function updateStats() {
+            let startDate, endDate;
+            const now = new Date();
+            
+            if (currentTab === 'week') {
+                const dayOfWeek = now.getDay();
+                startDate = new Date(now);
+                startDate.setDate(now.getDate() - dayOfWeek);
+                endDate = new Date(now);
+            } else if (currentTab === 'month') {
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            } else {
+                startDate = new Date(2000, 0, 1);
+                endDate = new Date(2100, 11, 31);
+            }
+            
+            const startStr = formatDate(startDate);
+            const endStr = formatDate(endDate);
+            
+            let totalGong = 0, totalGuoh = 0;
+            const categoryStats = {
+                '济人': { gong: 0, guoh: 0 },
+                '利物': { gong: 0, guoh: 0 },
+                '劝化': { gong: 0, guoh: 0 },
+                '修身': { gong: 0, guoh: 0 },
+                '自定义': { gong: 0, guoh: 0 }
+            };
+            
+            Object.entries(state.records).forEach(([date, records]) => {
+                if (date >= startStr && date <= endStr) {
+                    records.forEach(r => {
+                        if (r.type === 'gong') {
+                            totalGong += r.score;
+                            categoryStats[r.category] = categoryStats[r.category] || { gong: 0, guoh: 0 };
+                            categoryStats[r.category].gong += r.score;
+                        } else {
+                            totalGuoh += r.score;
+                            categoryStats[r.category] = categoryStats[r.category] || { gong: 0, guoh: 0 };
+                            categoryStats[r.category].guoh += r.score;
+                        }
+                    });
+                }
+            });
+            
+            document.getElementById('stats-gong').textContent = totalGong;
+            document.getElementById('stats-guoh').textContent = totalGuoh;
+            
+            const maxCategory = Math.max(totalGong + totalGuoh, 1);
+            const gongPercent = (totalGong / maxCategory) * 100;
+            const guohPercent = (totalGuoh / maxCategory) * 100;
+            
+            document.getElementById('bar-gong').style.width = gongPercent + '%';
+            document.getElementById('bar-guoh').style.width = guohPercent + '%';
+            
+            // 分类图表 - 竖状柱状图（功过双柱）
+            const chartContainer = document.getElementById('category-chart-list');
+            const catOrder = ['济人', '利物', '劝化', '修身'];
+            const allGong = catOrder.map(cat => (categoryStats[cat] || { gong: 0 }).gong);
+            const allGuoh = catOrder.map(cat => (categoryStats[cat] || { guoh: 0 }).guoh);
+            const maxVal = Math.max(...allGong, ...allGuoh, 1);
+            const chartHeight = 150;
+
+            chartContainer.innerHTML = `
+                <div class="v-chart">
+                    ${catOrder.map(cat => {
+                        const s = categoryStats[cat] || { gong: 0, guoh: 0 };
+                        const gongH = Math.max((s.gong / maxVal) * chartHeight, 0);
+                        const guohH = Math.max((s.guoh / maxVal) * chartHeight, 0);
+                        const net = s.gong - s.guoh;
+                        let sumCls = 'zero', sumText = '0';
+                        if (net > 0) { sumCls = 'positive'; sumText = '+' + net; }
+                        else if (net < 0) { sumCls = 'negative'; sumText = '' + net; }
+                        return `
+                            <div class="v-cat-group">
+                                <div class="v-cat-bars">
+                                    <div class="v-bar gong" style="height: ${gongH}px">
+                                        ${s.gong > 0 ? `<span class="v-bar-val gong">+${s.gong}</span>` : ''}
+                                    </div>
+                                    <div class="v-bar guoh" style="height: ${guohH}px">
+                                        ${s.guoh > 0 ? `<span class="v-bar-val guoh">-${s.guoh}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="v-cat-label">${cat}</div>
+                                <div class="v-cat-summary ${sumCls}">${sumText}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        // 获取当前段位
+        function getCurrentRank() {
+            let totalScore = 0;
+            Object.values(state.records).forEach(dateRecords => {
+                dateRecords.forEach(r => { if (r.type === 'gong') totalScore += r.score; });
+            });
+            let currentRank = RANKS[0];
+            for (let i = RANKS.length - 1; i >= 0; i--) {
+                if (totalScore >= RANKS[i].threshold) {
+                    currentRank = RANKS[i];
+                    break;
+                }
+            }
+            return { rank: currentRank, score: totalScore };
+        }
+
+        // 删除记录（首页今日记录使用）
+        function deleteRecord(date, idx) {
+            deleteRecordByDate(date, idx);
+        }
+
+        // 初始化
+        function init() {
+            loadState();
+            updateUI();
+            showItems('济人');
+        }
+
+        init();
+
+        // 先注销所有旧 Service Worker，再注册新的（network-first 策略）
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(reg) { reg.unregister(); });
+                // 注册新的 SW
+                navigator.serviceWorker.register('sw.js').then(function(reg) {
+                    console.log('SW registered:', reg.scope);
+                }).catch(function(err) {
+                    console.log('SW registration failed:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

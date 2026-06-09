@@ -1387,8 +1387,9 @@
         <h3>添加到手机桌面</h3>
         <p>像APP一样使用功过格，离线也能记录</p>
         <div class="install-steps" id="install-steps-text">
-            <b>iOS：</b>点底部 <b>分享按钮</b> → 选择「添加到主屏幕」<br>
-            <b>Android：</b>点右上角 <b>菜单</b> → 选择「添加到主屏幕」
+            <b>iOS Safari：</b>点底部 <b>↑分享图标</b> → 下滑选「添加到主屏幕」<br>
+            <b>Android：</b>点右上角 <b>⋮三个点</b> → 选「添加到主屏幕」<br>
+            <b>微信内：</b>点右上角 <b>⋮</b> → 选「在浏览器打开」后操作
         </div>
         <div class="install-actions">
             <button class="install-btn-install" id="install-btn" onclick="handleInstall()">立即添加</button>
@@ -2612,7 +2613,7 @@
                 });
             } else {
                 // iOS或其他浏览器，显示手动步骤
-                alert('请按以下步骤添加到桌面：\n\niOS：点底部「分享」按钮 →「添加到主屏幕」\n\nAndroid：点右上角「菜单」→「添加到主屏幕」');
+                alert('请按以下步骤添加到桌面：\n\niOS Safari：点底部↑分享图标 → 下滑选「添加到主屏幕」\n\nAndroid：点右上角⋮三个点 → 选「添加到主屏幕」\n\n微信内：先点右上角⋮ →「在浏览器打开」');
             }
         }
 

@@ -1316,9 +1316,86 @@
             opacity: 1;
             background: rgba(231, 76, 60, 0.3);
         }
+
+        /* PWA安装引导 */
+        .install-banner {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 448px;
+            background: linear-gradient(135deg, #8E44AD 0%, #2980B9 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            z-index: 300;
+            box-shadow: 0 8px 32px rgba(142, 68, 173, 0.4);
+            animation: slideUp 0.5s ease;
+            display: none;
+        }
+        .install-banner.show { display: block; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .install-banner h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .install-banner p {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+        .install-banner .install-steps {
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 14px;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+        .install-banner .install-steps b { color: #FFD700; }
+        .install-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .install-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .install-btn-install {
+            background: white;
+            color: #8E44AD;
+        }
+        .install-btn-later {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <!-- PWA安装引导横幅 -->
+    <div id="install-banner" class="install-banner">
+        <h3>添加到手机桌面</h3>
+        <p>像APP一样使用功过格，离线也能记录</p>
+        <div class="install-steps" id="install-steps-text">
+            <b>iOS：</b>点底部 <b>分享按钮</b> → 选择「添加到主屏幕」<br>
+            <b>Android：</b>点右上角 <b>菜单</b> → 选择「添加到主屏幕」
+        </div>
+        <div class="install-actions">
+            <button class="install-btn-install" id="install-btn" onclick="handleInstall()">立即添加</button>
+            <button class="install-btn-later" onclick="dismissInstall()">稍后再说</button>
+        </div>
+    </div>
+
     <!-- 顶部 -->
     <div class="header">
         <h1 id="app-title">功过格</h1>
@@ -1489,6 +1566,22 @@
             <div class="category-chart">
                 <div id="category-chart-list"></div>
             </div>
+        </div>
+
+        <div style="padding: 20px 16px;">
+            <button onclick="clearAllRecords()" style="width: 100%; padding: 12px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; color: #999; font-size: 14px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fee'" onmouseout="this.style.background='#f5f5f5'">🗑️ 一键清除所有记录</button>
+        </div>
+    </div>
+
+    <!-- 清除确认弹窗 -->
+    <div id="clear-modal" class="modal">
+        <div class="modal-content" style="max-width: 320px;">
+            <button class="modal-close" onclick="closeClearModal()">×</button>
+            <div style="font-size: 36px; text-align: center; margin-bottom: 8px;">⚠️</div>
+            <div class="modal-title" style="font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 8px; color: #E74C3C;">确认清除所有记录？</div>
+            <div class="modal-message" style="font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">此操作不可撤销，所有善恶记录和自定义条目将被永久删除。</div>
+            <button onclick="doClearAll()" style="width: 100%; padding: 12px; background: #E74C3C; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;">确认清除</button>
+            <button onclick="closeClearModal()" style="width: 100%; padding: 12px; background: #f5f5f5; color: #666; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; cursor: pointer;">取消</button>
         </div>
     </div>
 
@@ -2470,6 +2563,72 @@
         // 删除记录（首页今日记录使用）
         function deleteRecord(date, idx) {
             deleteRecordByDate(date, idx);
+        }
+
+        // 一键清除所有记录
+        function clearAllRecords() {
+            document.getElementById('clear-modal').style.display = 'flex';
+        }
+
+        function closeClearModal() {
+            document.getElementById('clear-modal').style.display = 'none';
+        }
+
+        function doClearAll() {
+            state = {
+                records: {},
+                customItems: [],
+                streak: 0,
+                lastCheckIn: null
+            };
+            localStorage.removeItem(STORAGE_KEY);
+            saveState();
+            closeClearModal();
+            updateUI();
+            switchTab('total');
+        }
+
+        // PWA安装引导逻辑
+        let deferredPrompt = null;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const installDismissed = localStorage.getItem('gongguo_install_dismissed');
+
+        // 监听beforeinstallprompt事件（Android Chrome）
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!isStandalone && !installDismissed) {
+                document.getElementById('install-banner').classList.add('show');
+            }
+        });
+
+        function handleInstall() {
+            if (deferredPrompt) {
+                // Android Chrome原生安装
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choice) => {
+                    deferredPrompt = null;
+                    document.getElementById('install-banner').classList.remove('show');
+                });
+            } else {
+                // iOS或其他浏览器，显示手动步骤
+                alert('请按以下步骤添加到桌面：\n\niOS：点底部「分享」按钮 →「添加到主屏幕」\n\nAndroid：点右上角「菜单」→「添加到主屏幕」');
+            }
+        }
+
+        function dismissInstall() {
+            document.getElementById('install-banner').classList.remove('show');
+            localStorage.setItem('gongguo_install_dismissed', '1');
+        }
+
+        // 如果不在独立模式且未关闭提示，3秒后显示安装引导
+        if (!isStandalone && !installDismissed) {
+            setTimeout(() => {
+                if (!deferredPrompt) {
+                    // 非Chrome环境，也显示引导（手动方式）
+                    document.getElementById('install-banner').classList.add('show');
+                }
+            }, 3000);
         }
 
         // 初始化
